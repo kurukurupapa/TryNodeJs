@@ -1,6 +1,6 @@
 // Node.jsからGoogleスプレッドシートを読み込んでみる。
 // Google Sheets API v4を使用。
-
+// いろいろアクセスしてみる。
 //
 // 元ネタ
 // Node.js Quickstart  |  Sheets API  |  Google Developers
@@ -12,8 +12,10 @@
 // npm install google-auth-library --save
 //
 // Usage
-// node quickstart.js
-
+// node quickstart2.js スプレッドシートID シート名
+// Googleが公開しているサンプルスプレッドシートにアクセス
+// node quickstart2.js 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms "Class Data"
+//
 // 2017/12/03 新規作成
 
 var fs = require('fs');
@@ -28,17 +30,26 @@ var TOKEN_DIR = (process.env.HOME || process.env.HOMEPATH || process.env.USERPRO
 var TOKEN_PATH = TOKEN_DIR + 'sheets.googleapis.com-nodejs-quickstart.json';
 var CLIENT_SECRET_PATH = TOKEN_DIR + 'client_secret.json';
 
+// スプレッドシートID、シート名
+// 初期値はGoogleが公開しているサンプルスプレッドシート
+var spreadsheetId = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms';
+var range = 'Class Data';
+var endCallback = null;
+
 // Load client secrets from a local file.
 // ※client_secret.jsonの読み込み場所を変更しました。
-fs.readFile(CLIENT_SECRET_PATH, function processClientSecrets(err, content) {
-  if (err) {
-    console.log('Error loading client secret file: ' + err);
-    return;
-  }
-  // Authorize a client with the loaded credentials, then call the
-  // Google Sheets API.
-  authorize(JSON.parse(content), listMajors);
-});
+function run() {
+  fs.readFile(CLIENT_SECRET_PATH, function processClientSecrets(err, content) {
+    if (err) {
+      console.log('Error loading client secret file: ' + err);
+      endCallback(err, null);
+      return;
+    }
+    // Authorize a client with the loaded credentials, then call the
+    // Google Sheets API.
+    authorize(JSON.parse(content), listMajors);
+  });
+}
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -122,25 +133,35 @@ function listMajors(auth) {
   var sheets = google.sheets('v4');
   sheets.spreadsheets.values.get({
     auth: auth,
-    // このスプレッドシートは、Googleが公開してくれているものの模様。
-    spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-    // "Class Data"はシート名
-    range: 'Class Data!A2:E',
+    spreadsheetId: spreadsheetId,
+    // 日本語のシート名は「Request contains an invalid argument」となった。
+    range: range,
   }, function(err, response) {
     if (err) {
       console.log('The API returned an error: ' + err);
+      endCallback(err, null);
+      return;
+    }
+    endCallback(err, response);
+  });
+}
+
+if (process.argv[1] == __filename)
+  spreadsheetId = process.argv[2];
+  range = process.argv[3];
+  endCallback = function(err, response) {
+    if (err) {
       return;
     }
     var rows = response.values;
     if (rows.length == 0) {
       console.log('No data found.');
     } else {
-      console.log('Name, Major:');
+      console.log('行数='+rows.length+', 列数='+rows[0].length);
       for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        // Print columns A and E, which correspond to indices 0 and 4.
-        console.log('%s, %s', row[0], row[4]);
+        var line = rows[i].join(', ');
+        console.log((i+1) + ': ' + line);
       }
     }
-  });
-}
+  }
+  run();

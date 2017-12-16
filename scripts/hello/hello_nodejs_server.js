@@ -1,7 +1,7 @@
 // HelloWorldを表示するサーバ
 //
 // 実行方法
-// node scripts\hello\hello_coffee_server.js
+// node scripts/hello/hello_nodejs_server.js
 //
 // コピペ元
 // nvm で作る Node.js の環境構築（+ Hello world） - blog @arfyasu http://arfyasu.hatenablog.com/entry/2016/01/26/212543

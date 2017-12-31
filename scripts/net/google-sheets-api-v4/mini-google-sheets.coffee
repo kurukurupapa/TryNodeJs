@@ -22,7 +22,9 @@ baseName = path.basename __filename, path.extname(__filename)
 infolog = util.log
 debuglog = util.debuglog baseName
 
+###
 # Googleスプレッドシート操作クラス
+###
 class Spreadsheet
   @READ_ONLY_SCOPE: [
     'https://www.googleapis.com/auth/drive.metadata.readonly',
@@ -38,10 +40,12 @@ class Spreadsheet
     @accessToken = null
     @spreadsheetId = null
 
+  ###
   # OAuth2.0認可を使用する
   # credentialPath - Google Developers ConsoleからダウンロードしたOAuth2.0クライアントIDのJSONファイルパス
   # tokenPath - OAuth2.0認可後のトークン情報を保存するファイルパス
   # writeFlag - 読み込みのみの場合false, 読み書きの場合true
+  ###
   useOAuth2: (credentialPath, tokenPath, writeFlag, callback) ->
     assert.ok credentialPath
     assert.ok tokenPath
@@ -55,8 +59,10 @@ class Spreadsheet
         throw new Error "Error loading client secret file: #{err}"
       @_authorize JSON.parse(content), tokenPath, scope, callback
 
+  ###
   # 別途入手済みのアクセストークンを使用する
   # accessToken - アクセストークン
+  ###
   useAccessToken: (@accessToken, callback) ->
     assert.ok @accessToken
     assert.ok callback
@@ -125,8 +131,10 @@ class Spreadsheet
     fs.writeFile tokenPath, JSON.stringify(token)
     infolog "Token stored to #{tokenPath}"
 
+  ###
   # 使用するスプレッドシートを準備
   # name - スプレッドシートの名前
+  ###
   useSpreadsheet: (name, callback) ->
     @_listFilesByName name, null, (response) =>
       if response.files.length != 1
@@ -134,10 +142,12 @@ class Spreadsheet
       @spreadsheetId = response.files[0].id
       callback response
 
+  ###
   # Googleドライブから指定した名前のファイルを取得する
   # Google Drive API v3を使用
   # name - ファイル名
   # parentId - 必要あればフォルダのID
+  ###
   _listFilesByName: (name, parentId, callback) ->
     # 検索条件の組み立て
     q = "name=\"#{name}\""
@@ -158,9 +168,11 @@ class Spreadsheet
         throw new Error "The API returned an error: #{err}"
       callback response
 
+  ###
   # スプレッドシートの作成
   # マイドライブ直下に作成される。
   # name - スプレッドシート名
+  ###
   createSpreadsheet: (name, callback) ->
     @sheets.spreadsheets.create {
       auth: @oauth2Client if @oauth2Client
@@ -175,7 +187,9 @@ class Spreadsheet
       @spreadsheetId = response.spreadsheetId
       callback response
 
+  ###
   # スプレッドシートの情報を取得する
+  ###
   getProperties: (callback) ->
     @sheets.spreadsheets.get {
       auth: @oauth2Client if @oauth2Client
@@ -187,8 +201,10 @@ class Spreadsheet
         throw new Error "The API returned an error: #{err}"
       callback response
 
+  ###
   # シートの追加
   # sheetName - シート名
+  ###
   addSheet: (sheetName, callback) ->
     @sheets.spreadsheets.batchUpdate {
       auth: @oauth2Client if @oauth2Client
@@ -206,8 +222,10 @@ class Spreadsheet
         throw new Error "The API returned an error: #{err}"
       callback response
 
+  ###
   # シートの値を取得
   # sheetName - シート名
+  ###
   getValues: (sheetName, callback) ->
     @sheets.spreadsheets.values.get {
       auth: @oauth2Client if @oauth2Client
@@ -220,9 +238,11 @@ class Spreadsheet
         throw new Error "The API returned an error: #{err}"
       callback response
 
+  ###
   # 指定範囲の値を更新
   # range - 更新するセル範囲。例："Sheet1!A1:C3"
   # values - 更新する値の二次元配列。例：[['a','b','c'],[1,2,3]]
+  ###
   updateValues: (range, values, callback) ->
     @sheets.spreadsheets.values.batchUpdate {
       auth: @oauth2Client if @oauth2Client
@@ -240,9 +260,11 @@ class Spreadsheet
         throw new Error "The API returned an error: #{err}"
       callback response
 
+  ###
   # 指定シートの最終行に追記
   # sheetName - シート名
   # values - 追記する値の二次元配列。例：[['a','b','c'],[1,2,3]]
+  ###
   appendValues: (sheetName, values, callback) ->
     @sheets.spreadsheets.values.append {
       auth: @oauth2Client if @oauth2Client

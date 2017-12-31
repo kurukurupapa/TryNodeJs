@@ -5,8 +5,6 @@
 
 var path = require("path");
 var util = require('util');
-var infolog = require("util").log;
-var debuglog = require("util").debuglog("template");
 
 var scriptDir = __dirname;
 var scriptName = path.basename(__filename);
@@ -14,6 +12,9 @@ var baseName = path.basename(__filename, path.extname(__filename));
 var d = new Date();
 var dateStr = d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2);
 var timeStr = ('0'+d.getHours()).slice(-2)+('0'+d.getMinutes()).slice(-2)+('0'+d.getSeconds()).slice(-2);
+var timestamp = dateStr+'-'+timeStr
+var infolog = util.log;
+var debuglog = util.debuglog(baseName);
 
 // 初期処理
 debuglog(scriptName + ' START');

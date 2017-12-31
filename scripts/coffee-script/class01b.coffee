@@ -19,13 +19,19 @@ class Dog extends Animal
         super "Bowwow, #{word}"
 
 class Dog2 extends Animal
+    # クラス定数定義
     # 定数定義の記述方法はない？→英大文字で書くことで何となく定数っぽくする。
+    # "=",":"でも同じ模様
     @CLASS_STATIC_PROPERTY1 = 'クラス定数1'
     @CLASS_STATIC_PROPERTY2:  'クラス定数2'
+    # クラス変数定義
+    # "=",":"でも同じ模様
     @class_property1 = 'クラス変数1'
     @class_property2:  'クラス変数2'
+    # インスタンス定数定義
     INSTANCE_STATIC_PROPERTY1 = 'インスタンス定数1' #定義できない。undefinedになる。
     INSTANCE_STATIC_PROPERTY2:  'インスタンス定数2'
+    # インスタンス変数定義
     instance_property1 = 'インスタンス変数1' #定義できない。undefinedになる。
     instance_property2:  'インスタンス変数2'
 
@@ -44,22 +50,22 @@ dog2obj.say2("Hello!")
 console.log "dog2obj=#{util.inspect dog2obj}"
 console.log "Dog2=#{util.inspect Dog2}"
 
-console.log ""
-console.log "dog2obj=#{util.inspect dog2obj}"
+console.log "--- インスタンス変数を変更してみる"
+# console.log "dog2obj=#{util.inspect dog2obj}"
 console.log "dog2obj.instance_property1=#{dog2obj.instance_property1}"
 console.log "dog2obj.instance_property2=#{dog2obj.instance_property2}"
 dog2obj.instance_property1 = 'インスタンス変数1b'
 dog2obj.instance_property2 = 'インスタンス変数2b'
-console.log "dog2obj=#{util.inspect dog2obj}"
+# console.log "dog2obj=#{util.inspect dog2obj}"
 console.log "dog2obj.instance_property1=#{dog2obj.instance_property1}"
 console.log "dog2obj.instance_property2=#{dog2obj.instance_property2}"
 
-console.log ""
-console.log "Dog2=#{util.inspect Dog2}"
+console.log "--- クラス変数を変更してみる"
+# console.log "Dog2=#{util.inspect Dog2}"
 console.log "Dog2.class_property1=#{Dog2.class_property1}"
 console.log "Dog2.class_property2=#{Dog2.class_property2}"
 Dog2.class_property1 = 'クラス変数1b'
 Dog2.class_property2 = 'クラス変数2b'
-console.log "Dog2=#{util.inspect Dog2}"
+# console.log "Dog2=#{util.inspect Dog2}"
 console.log "Dog2.class_property1=#{Dog2.class_property1}"
 console.log "Dog2.class_property2=#{Dog2.class_property2}"

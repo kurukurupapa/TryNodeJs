@@ -1,4 +1,5 @@
 # Google APIs Client for Node.js を簡単に使えるようにラッピング
+# Google Drive API v3を使用。
 # Google Sheets API v4を使用。
 #
 # 事前準備

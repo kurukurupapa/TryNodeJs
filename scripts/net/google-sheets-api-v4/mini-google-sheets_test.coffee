@@ -35,7 +35,9 @@ async.series [
     obj.useOAuth2 oauth2ClientPath, readTokenPath, false, () =>
       accessToken = obj.oauth2Client.credentials.access_token
       console.log "credentials=#{util.inspect obj.oauth2Client.credentials}"
-      step()
+      obj.useSpreadsheet 'TryNodeJs_sample-spreadsheet', (response) =>
+        console.log "response=#{util.inspect response}"
+        step()
 
   # 入手済みアクセストークン使用のテスト
   , (step) =>

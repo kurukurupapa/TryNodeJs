@@ -3,7 +3,8 @@
 // 実行方法
 // node template.js
 
-var path = require("path");
+var assert = require('assert')
+var path = require('path');
 var util = require('util');
 
 var scriptDir = __dirname;

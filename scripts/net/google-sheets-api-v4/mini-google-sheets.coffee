@@ -26,7 +26,7 @@ debuglog = util.debuglog baseName
 ###
 # Googleスプレッドシート操作クラス
 ###
-class Spreadsheet
+class GSheets
   @READ_ONLY_SCOPE: [
     'https://www.googleapis.com/auth/drive.metadata.readonly',
     'https://www.googleapis.com/auth/spreadsheets.readonly']
@@ -39,34 +39,35 @@ class Spreadsheet
     @sheets = google.sheets 'v4'
     @oauth2Client = null
     @accessToken = null
-    @spreadsheetId = null
 
   ###
   # OAuth2.0認可を使用する
-  # credentialPath - Google Developers ConsoleからダウンロードしたOAuth2.0クライアントIDのJSONファイルパス
-  # tokenPath - OAuth2.0認可後のトークン情報を保存するファイルパス
-  # writeFlag - 読み込みのみの場合false, 読み書きの場合true
+  # @param {string} credentialPath  Google Developers ConsoleからダウンロードしたOAuth2.0クライアントIDのJSONファイルパス
+  # @param {string} tokenPath  OAuth2.0認可後のトークン情報を保存するファイルパス
+  # @param {boolean} writeFlag  読み込みのみの場合false, 読み書きの場合true
+  # @param {function} callback  function(response)
   ###
   useOAuth2: (credentialPath, tokenPath, writeFlag, callback) ->
-    assert.ok credentialPath
-    assert.ok tokenPath
-    assert.ok callback
+    assert.ok credentialPath, "引数エラー credentialPath=#{credentialPath}"
+    assert.ok tokenPath, "引数エラー tokenPath=#{tokenPath}"
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     scope = if writeFlag
-      Spreadsheet.READ_WRITE_SCOPE
+      GSheets.READ_WRITE_SCOPE
     else
-      Spreadsheet.READ_ONLY_SCOPE
+      GSheets.READ_ONLY_SCOPE
     fs.readFile credentialPath, (err, content) =>
-      if err?
+      if err
         throw new Error "Error loading client secret file: #{err}"
       @_authorize JSON.parse(content), tokenPath, scope, callback
 
   ###
   # 別途入手済みのアクセストークンを使用する
-  # accessToken - アクセストークン
+  # @param {string} accessToken  アクセストークン
+  # @param {function} callback  function()
   ###
   useAccessToken: (@accessToken, callback) ->
-    assert.ok @accessToken
-    assert.ok callback
+    assert.ok @accessToken, "引数エラー accessToken=#{@accessToken}"
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     callback()
 
   ###*
@@ -89,7 +90,7 @@ class Spreadsheet
       else
         oauth2Client.credentials = JSON.parse(token)
         @oauth2Client = oauth2Client
-        callback()
+        callback @oauth2Client.credentials
 
   ###*
   # Get and store new token after prompting for user authorization, and then
@@ -115,7 +116,7 @@ class Spreadsheet
         oauth2Client.credentials = token
         @_storeToken token, tokenPath
         @oauth2Client = oauth2Client
-        callback()
+        callback token
 
   ###*
   # Store token to disk be used in later program executions.
@@ -133,23 +134,39 @@ class Spreadsheet
     infolog "Token stored to #{tokenPath}"
 
   ###
-  # 使用するスプレッドシートを準備
-  # name - スプレッドシートの名前
-  ###
-  useSpreadsheet: (name, callback) ->
-    @_listFilesByName name, null, (response) =>
-      if response.files.length != 1
-        throw new Error "ファイル名が一意ではありません。name=#{name},response=#{util.inspect response}"
-      @spreadsheetId = response.files[0].id
-      callback response
-
-  ###
   # Googleドライブから指定した名前のファイルを取得する
   # Google Drive API v3を使用
-  # name - ファイル名
-  # parentId - 必要あればフォルダのID
+  # @param {string} name  ファイル名
+  # @param {string} parentId  必要あればフォルダのID
+  # @param {function} callback  function(response)
+  # responseの主な内容：
+  # {
+  #   "kind": "drive#fileList",
+  #   "nextPageToken": string,
+  #   "incompleteSearch": boolean,
+  #   "files": [
+  #     {
+  #       "kind": "drive#file",
+  #       "id": string,
+  #       "name": string,
+  #       "mimeType": string,
+  #       "description": string,
+  #       "trashed": boolean,
+  #       "parents": [
+  #         string
+  #       ],
+  #       "createdTime": datetime,
+  #       "modifiedTime": datetime
+  #     }
+  #   ]
+  # }
+  # 詳細は次を参照。
+  # Files: list  |  Drive REST API  |  Google Developers https://developers.google.com/drive/v3/reference/files/list
+  # Files  |  Drive REST API  |  Google Developers https://developers.google.com/drive/v3/reference/files
   ###
-  _listFilesByName: (name, parentId, callback) ->
+  listFilesByName: (name, parentId, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
+
     # 検索条件の組み立て
     q = "name=\"#{name}\""
     q += " and \"#{parentId}\" in parents" if parentId
@@ -172,9 +189,11 @@ class Spreadsheet
   ###
   # スプレッドシートの作成
   # マイドライブ直下に作成される。
-  # name - スプレッドシート名
+  # @param {string} name  スプレッドシート名
+  # @param {function} callback  function(response)。responseの内容は、getPropertiesメソッド参照。
   ###
   createSpreadsheet: (name, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @sheets.spreadsheets.create {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
@@ -185,18 +204,54 @@ class Spreadsheet
     }, (err, response) =>
       if err
         throw new Error "The API returned an error: #{err}"
-      @spreadsheetId = response.spreadsheetId
       callback response
 
   ###
   # スプレッドシートの情報を取得する
+  # @param {string} spreadsheetId  スプレッドシートID
+  # @param {function} callback  function(response)
+  # responseの主な内容：
+  # {
+  #   spreadsheetId: string,
+  #   properties: {
+  #     title: string
+  #   },
+  #   sheets: [
+  #     {
+  #       properties: {
+  #         "sheetId": number,
+  #         "title": string,
+  #         "index": number,
+  #         "sheetType": enum(SheetType),
+  #         "gridProperties": {
+  #           "rowCount": number,
+  #           "columnCount": number,
+  #           "frozenRowCount": number,
+  #           "frozenColumnCount": number,
+  #           "hideGridlines": boolean,
+  #         },
+  #         "hidden": boolean,
+  #         "tabColor": {
+  #           "red": number,
+  #           "green": number,
+  #           "blue": number,
+  #           "alpha": number,
+  #         },
+  #         "rightToLeft": boolean
+  #       }
+  #     }
+  #   ]
+  # }
+  # 詳細は次を参照。
+  # REST Resource: spreadsheets | Sheets API | Google Developers https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets?hl=ja
   ###
-  getProperties: (callback) ->
+  getProperties: (spreadsheetId, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @sheets.spreadsheets.get {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
         Authorization: "Bearer #{@accessToken}"
-      spreadsheetId: @spreadsheetId
+      spreadsheetId: spreadsheetId
     }, (err, response) =>
       if err
         throw new Error "The API returned an error: #{err}"
@@ -204,14 +259,46 @@ class Spreadsheet
 
   ###
   # シートの追加
-  # sheetName - シート名
+  # @param {string} spreadsheetId  スプレッドシートID
+  # @param {string} sheetName  シート名
+  # @param {function} callback  function(response)
+  # responseの主な内容：
+  # {
+  #   "spreadsheetId": string,
+  #   "replies": [
+  #     {
+  #       "properties": {
+  #         "sheetId": number,
+  #         "title": string,
+  #         "index": number,
+  #         "sheetType": enum(SheetType),
+  #         "gridProperties": {
+  #           "rowCount": number,
+  #           "columnCount": number,
+  #           "frozenRowCount": number,
+  #           "frozenColumnCount": number,
+  #           "hideGridlines": boolean,
+  #         },
+  #         "hidden": boolean,
+  #         "tabColor": {
+  #           "red": number,
+  #           "green": number,
+  #           "blue": number,
+  #           "alpha": number,
+  #         },
+  #         "rightToLeft": boolean
+  #       },
+  #     }
+  #   ],
+  # }
   ###
-  addSheet: (sheetName, callback) ->
+  addSheet: (spreadsheetId, sheetName, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @sheets.spreadsheets.batchUpdate {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
         Authorization: "Bearer #{@accessToken}"
-      spreadsheetId: @spreadsheetId
+      spreadsheetId: spreadsheetId
       resource:
         requests: [
           addSheet:
@@ -225,14 +312,25 @@ class Spreadsheet
 
   ###
   # シートの値を取得
-  # sheetName - シート名
+  # @param {string} spreadsheetId  スプレッドシートID
+  # @param {string} sheetName  シート名
+  # @param {function} callback  function(response)
+  # responseの主な内容：
+  # {
+  #   "range": string,                    #例：'Sheet1!A1:Z1000'
+  #   "majorDimension": enum(Dimension),  #例：'ROWS'
+  #   "values": [array],                  #例：[['A1','B1'],['A2','B2']]
+  # }
+  # 詳細は次を参照。
+  # REST Resource: spreadsheets.values  |  Sheets API  |  Google Developers https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values?hl=ja#ValueRange
   ###
-  getValues: (sheetName, callback) ->
+  getValues: (spreadsheetId, sheetName, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @sheets.spreadsheets.values.get {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
         Authorization: "Bearer #{@accessToken}"
-      spreadsheetId: @spreadsheetId
+      spreadsheetId: spreadsheetId
       range: sheetName
     }, (err, response) =>
       if err
@@ -241,15 +339,18 @@ class Spreadsheet
 
   ###
   # 指定範囲の値を更新
-  # range - 更新するセル範囲。例："Sheet1!A1:C3"
-  # values - 更新する値の二次元配列。例：[['a','b','c'],[1,2,3]]
+  # @param {string} spreadsheetId  スプレッドシートID
+  # @param {string} range  更新するセル範囲。例："Sheet1!A1:C3"
+  # @param {object} values  更新する値の二次元配列。例：[['a','b','c'],[1,2,3]]
+  # @param {function} callback  function(response)
   ###
-  updateValues: (range, values, callback) ->
+  updateValues: (spreadsheetId, range, values, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @sheets.spreadsheets.values.batchUpdate {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
         Authorization: "Bearer #{@accessToken}"
-      spreadsheetId: @spreadsheetId
+      spreadsheetId: spreadsheetId
       resource:
         valueInputOption: 'USER_ENTERED'
         data: [{
@@ -263,15 +364,18 @@ class Spreadsheet
 
   ###
   # 指定シートの最終行に追記
-  # sheetName - シート名
-  # values - 追記する値の二次元配列。例：[['a','b','c'],[1,2,3]]
+  # @param {string} spreadsheetId  スプレッドシートID
+  # @param {string} sheetName  シート名
+  # @param {object} values  追記する値の二次元配列。例：[['a','b','c'],[1,2,3]]
+  # @param {function} callback  function(response)
   ###
-  appendValues: (sheetName, values, callback) ->
+  appendValues: (spreadsheetId, sheetName, values, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @sheets.spreadsheets.values.append {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
         Authorization: "Bearer #{@accessToken}"
-      spreadsheetId: @spreadsheetId
+      spreadsheetId: spreadsheetId
       range: sheetName
       valueInputOption: 'USER_ENTERED'
       resource:
@@ -281,4 +385,4 @@ class Spreadsheet
         throw new Error "The API returned an error: #{err}"
       callback response
 
-module.exports.Spreadsheet = Spreadsheet
+module.exports.GSheets = GSheets

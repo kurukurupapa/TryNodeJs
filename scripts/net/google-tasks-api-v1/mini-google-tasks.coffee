@@ -47,7 +47,7 @@ class GTasks
   useOAuth2: (credentialPath, tokenPath, writeFlag, callback) ->
     assert.ok credentialPath
     assert.ok tokenPath
-    assert.ok callback
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     scope = if writeFlag
       GTasks.READ_WRITE_SCOPE
     else
@@ -64,7 +64,7 @@ class GTasks
   ###
   useAccessToken: (@accessToken, callback) ->
     assert.ok @accessToken
-    assert.ok callback
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     callback()
 
   ###*
@@ -136,6 +136,7 @@ class GTasks
   # @param {function} callback  function(response)
   ###
   findTasklists: (title, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @listTasklists (response) =>
       tasklists = response.items
       outTasklists = []
@@ -165,6 +166,7 @@ class GTasks
   # }
   ###
   listTasklists: (callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @tasks.tasklists.list {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
@@ -189,6 +191,7 @@ class GTasks
   # }
   ###
   insertTasklist: (title, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @tasks.tasklists.insert {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
@@ -206,6 +209,7 @@ class GTasks
   # @param {function} callback  function(response)
   ###
   updateTasklist: (resource, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @tasks.tasklists.update {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
@@ -225,6 +229,7 @@ class GTasks
   # @param {function} callback  function(response)
   ###
   findTasks: (tasklistId, title, params, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @listTasks tasklistId, params, (response) =>
       tasks = response.items
       outTasks = []
@@ -274,6 +279,7 @@ class GTasks
   # }
   ###
   listTasks: (tasklistId, params, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     params2 = Object.assign {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
@@ -316,6 +322,7 @@ class GTasks
   # }
   ###
   insertTask: (tasklistId, resource, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @tasks.tasks.insert {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken
@@ -334,6 +341,7 @@ class GTasks
   # @param {function} callback  function(response)
   ###
   updateTaskStatusToCompleted: (tasklistId, resource, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     resource2 = Object.assign {}, resource, {status: GTasks.STATUS_COMPLETED}
     @updateTask tasklistId, resource2, (response) =>
       callback response
@@ -345,6 +353,7 @@ class GTasks
   # @param {function} callback  function(response)
   ###
   updateTask: (tasklistId, resource, callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     @tasks.tasks.update {
       auth: @oauth2Client if @oauth2Client
       headers: if @accessToken

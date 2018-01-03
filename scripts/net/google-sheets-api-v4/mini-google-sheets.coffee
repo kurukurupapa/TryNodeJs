@@ -12,8 +12,8 @@
 assert = require('assert')
 fs = require('fs')
 path = require("path")
-util = require('util')
 readline = require('readline')
+util = require('util')
 google = require('googleapis')
 googleAuth = require('google-auth-library')
 
@@ -69,6 +69,20 @@ class GSheets
     assert.ok @accessToken, "引数エラー accessToken=#{@accessToken}"
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     callback()
+
+  ###
+  # アクセストークンを更新する
+  # 事前にuseOAuth2メソッドを呼び出しておくこと。
+  # @param {function} callback  function(response)
+  ###
+  refreshAccessToken: (callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
+    assert.ok @oauth2Client, "エラー @oauth2Client=#{@oauth2Client}"
+    @oauth2Client.refreshAccessToken (err, token) =>
+      if err
+        throw new Error "Error while trying to refresh access token #{err}"
+      @oauth2Client.credentials = token
+      callback token
 
   ###*
   # Create an OAuth2 client with the given credentials, and then execute the

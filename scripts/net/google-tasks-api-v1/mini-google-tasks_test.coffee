@@ -34,11 +34,21 @@ async.series [
     infolog "--- OAuth2.0認証のテスト"
     obj = new GTasks
     obj.useOAuth2 oauth2ClientPath, readTokenPath, false, (response) =>
-      accessToken = response.access_token
-      console.log "response=#{util.inspect response}"
+      console.log "useOAuth2 response=#{util.inspect response}"
       obj.listTasklists (response) =>
         console.log "response.items.length=#{response.items.length}"
-        step()
+
+        infolog "--- アクセストークンのリフレッシュ（Read only）"
+        obj.refreshAccessToken (response) =>
+          console.log "response=#{util.inspect response}"
+          accessToken = response.access_token
+
+          infolog "--- アクセストークンのリフレッシュ（Read and write）"
+          obj2 = new GTasks
+          obj2.useOAuth2 oauth2ClientPath, writeTokenPath, true, (response) =>
+            obj2.refreshAccessToken (response) =>
+              console.log "response=#{util.inspect response}"
+              step()
 
   # 入手済みアクセストークン使用のテスト
   , (step) =>

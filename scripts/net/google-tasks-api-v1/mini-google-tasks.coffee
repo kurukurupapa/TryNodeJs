@@ -45,8 +45,8 @@ class GTasks
   # @param {function} callback  function(response)
   ###
   useOAuth2: (credentialPath, tokenPath, writeFlag, callback) ->
-    assert.ok credentialPath
-    assert.ok tokenPath
+    assert.ok credentialPath, "引数エラー credentialPath=#{credentialPath}"
+    assert.ok tokenPath, "引数エラー tokenPath=#{tokenPath}"
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     scope = if writeFlag
       GTasks.READ_WRITE_SCOPE
@@ -63,9 +63,23 @@ class GTasks
   # @param {function} callback  function()
   ###
   useAccessToken: (@accessToken, callback) ->
-    assert.ok @accessToken
+    assert.ok @accessToken, "引数エラー accessToken=#{@accessToken}"
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     callback()
+
+  ###
+  # アクセストークンを更新する
+  # 事前にuseOAuth2メソッドを呼び出しておくこと。
+  # @param {function} callback  function(response)
+  ###
+  refreshAccessToken: (callback) ->
+    assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
+    assert.ok @oauth2Client, "エラー @oauth2Client=#{@oauth2Client}"
+    @oauth2Client.refreshAccessToken (err, token) =>
+      if err
+        throw new Error "Error while trying to refresh access token #{err}"
+      @oauth2Client.credentials = token
+      callback token
 
   ###*
   # Create an OAuth2 client with the given credentials, and then execute the

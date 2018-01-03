@@ -34,11 +34,21 @@ async.series [
     infolog "--- OAuth2.0認証のテスト"
     obj = new GSheets
     obj.useOAuth2 oauth2ClientPath, readTokenPath, false, (response) =>
-      accessToken = response.access_token
       console.log "useOAuth2 response=#{util.inspect response}"
       obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (response) =>
-        console.log "listFilesByName response.files.length=#{response.files.length}"
-        step()
+        console.log "response.files.length=#{response.files.length}"
+
+        infolog "--- アクセストークンのリフレッシュ（Read only）"
+        obj.refreshAccessToken (response) =>
+          console.log "response=#{util.inspect response}"
+          accessToken = response.access_token
+
+          infolog "--- アクセストークンのリフレッシュ（Read and write）"
+          obj2 = new GSheets
+          obj2.useOAuth2 oauth2ClientPath, writeTokenPath, true, (response) =>
+            obj2.refreshAccessToken (response) =>
+              console.log "response=#{util.inspect response}"
+              step()
 
   # 入手済みアクセストークン使用のテスト
   , (step) =>
@@ -49,7 +59,7 @@ async.series [
     obj = new GSheets
     obj.useAccessToken accessToken, () =>
       obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (response) =>
-        console.log "listFilesByName response.files.length=#{response.files.length}"
+        console.log "response.files.length=#{response.files.length}"
         step()
 
   # Googleスプレッドシート読み込みのテスト

@@ -28,7 +28,7 @@ infolog "testCase=#{testCase}"
 async.series [
   # OAuth2.0認証のテスト
   (step) =>
-    if testCase? and not (testCase is 'oauth2')
+    if testCase? and not (testCase is 'OAuth2')
       step()
       return
     infolog "--- OAuth2.0認証のテスト"
@@ -42,7 +42,7 @@ async.series [
 
   # 入手済みアクセストークン使用のテスト
   , (step) =>
-    if testCase? and not (testCase is 'access-token')
+    if testCase? and not (testCase is 'AccessToken')
       step()
       return
     infolog "--- 入手済みアクセストークン使用のテスト"
@@ -54,7 +54,7 @@ async.series [
 
   # Googleタスク読み込みのテスト
   , (step) =>
-    if testCase? and not (testCase is 'read')
+    if testCase? and not (testCase is 'Read')
       step()
       return
     infolog "--- Googleタスク読み込みのテスト"
@@ -85,7 +85,7 @@ async.series [
 
   # Googleタスク書き込みのテスト
   , (step) =>
-    if testCase? and not (testCase is 'write')
+    if testCase? and not (testCase is 'Write')
       step()
       return
     infolog "--- Googleタスク書き込みのテスト"

@@ -93,6 +93,20 @@ async.series [
               console.log "findTask response=#{util.inspect response}"
               step()
 
+  # Googleタスク読み込みのテスト2
+  , (step) =>
+    if testCase? and not (testCase is 'Read2')
+      step()
+      return
+    infolog "--- Googleタスク読み込みのテスト2"
+    obj = new GTasks
+    obj.useOAuth2 oauth2ClientPath, readTokenPath, false, () =>
+
+      infolog "--- デフォルトタスクリストの照会"
+      obj.listTasks GTasks.TASKLIST_ID_DEFAULT, null, (response) =>
+        console.log "listTasks response=#{util.inspect response}"
+        step()
+
   # Googleタスク書き込みのテスト
   , (step) =>
     if testCase? and not (testCase is 'Write')
@@ -126,6 +140,23 @@ async.series [
             obj.updateTaskStatusToCompleted tasklist.id, task, (response) =>
               console.log "updateTaskStatusToCompleted response=#{util.inspect response}"
               step()
+
+  # Googleタスク書き込みのテスト2
+  , (step) =>
+    if testCase? and not (testCase is 'Write2')
+      step()
+      return
+    infolog "--- Googleタスク書き込みのテスト2"
+    obj = new GTasks
+    obj.useOAuth2 oauth2ClientPath, writeTokenPath, false, () =>
+
+      infolog "--- デフォルトタスクリストの書き込み"
+      obj.insertTask GTasks.TASKLIST_ID_DEFAULT, {
+        title: "Task #{timestamp}"
+        notes: 'Notes\ntest1\ntest2'
+      }, (response) =>
+        console.log "insertTask response=#{util.inspect response}"
+        step()
 
 ], (err) =>
   infolog err if err?

@@ -29,6 +29,7 @@ debuglog = util.debuglog baseName
 class GTasks
   @READ_ONLY_SCOPE: ['https://www.googleapis.com/auth/tasks.readonly']
   @READ_WRITE_SCOPE: ['https://www.googleapis.com/auth/tasks']
+  @TASKLIST_ID_DEFAULT: '@default'
   @STATUS_NEEDS_ACTION: 'needsAction'
   @STATUS_COMPLETED: 'completed'
 
@@ -237,7 +238,7 @@ class GTasks
 
   ###
   # タスクを抽出
-  # @param {string} tasklistId  タスクリストID
+  # @param {string} tasklistId  タスクリストID。デフォルトタスクリストの場合、'@default'。
   # @param {string} title  抽出対象のタイトル
   # @param {object} params  listTasksメソッド参照
   # @param {function} callback  function(response)
@@ -254,7 +255,7 @@ class GTasks
 
   ###
   # タスク一覧を取得
-  # @param {string} tasklistId  タスクリストID
+  # @param {string} tasklistId  タスクリストID。デフォルトタスクリストの場合、'@default'。
   # @param {object} params Parameters for request
   # @param {boolean} params.showCompleted Flag indicating whether completed tasks are returned in the result. Optional. The default is True.
   # @param {boolean} params.showDeleted Flag indicating whether deleted tasks are returned in the result. Optional. The default is False.
@@ -307,7 +308,7 @@ class GTasks
 
   ###
   # タスクを追加
-  # @param {string} tasklistId  タスクリストID
+  # @param {string} tasklistId  タスクリストID。デフォルトタスクリストの場合、'@default'。
   # @param {object} resource  新規タスクの内容。指定したい属性のみ設定すればOK。
   # @param {function} callback  function(response)
   # resource,responseの例：
@@ -350,7 +351,7 @@ class GTasks
 
   ###
   # タスクのステータスを完了に更新
-  # @param {string} tasklistId  タスクリストID
+  # @param {string} tasklistId  タスクリストID。デフォルトタスクリストの場合、'@default'。
   # @param {object} resource  更新するタスクオブジェクト。（更新項目だけだとエラーになった。全項目が揃ってないとダメかも。）
   # @param {function} callback  function(response)
   ###
@@ -362,7 +363,7 @@ class GTasks
 
   ###
   # タスクを更新
-  # @param {string} tasklistId  タスクリストID
+  # @param {string} tasklistId  タスクリストID。デフォルトタスクリストの場合、'@default'。
   # @param {object} resource  更新するタスクオブジェクト。（更新項目だけだとエラーになった。全項目が揃ってないとダメかも。）
   # @param {function} callback  function(response)
   ###

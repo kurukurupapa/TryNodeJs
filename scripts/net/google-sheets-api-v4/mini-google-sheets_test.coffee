@@ -33,20 +33,25 @@ async.series [
       return
     infolog "--- OAuth2.0認証のテスト"
     obj = new GSheets
-    obj.useOAuth2 oauth2ClientPath, readTokenPath, false, (response) =>
+    obj.useOAuth2 oauth2ClientPath, readTokenPath, false, (err, response) =>
+      throw err if err
       console.log "useOAuth2 response=#{util.inspect response}"
-      obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (response) =>
+      obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (err, response) =>
+        throw err if err
         console.log "response.files.length=#{response.files.length}"
 
         infolog "--- アクセストークンのリフレッシュ（Read only）"
-        obj.refreshAccessToken (response) =>
+        obj.refreshAccessToken (err, response) =>
+          throw err if err
           console.log "response=#{util.inspect response}"
           accessToken = response.access_token
 
           infolog "--- アクセストークンのリフレッシュ（Read and write）"
           obj2 = new GSheets
-          obj2.useOAuth2 oauth2ClientPath, writeTokenPath, true, (response) =>
-            obj2.refreshAccessToken (response) =>
+          obj2.useOAuth2 oauth2ClientPath, writeTokenPath, true, (err, response) =>
+            throw err if err
+            obj2.refreshAccessToken (err, response) =>
+              throw err if err
               console.log "response=#{util.inspect response}"
               step()
 
@@ -57,8 +62,10 @@ async.series [
       return
     infolog "--- 入手済みアクセストークン使用のテスト"
     obj = new GSheets
-    obj.useAccessToken accessToken, () =>
-      obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (response) =>
+    obj.useAccessToken accessToken, (err) =>
+      throw err if err
+      obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (err, response) =>
+        throw err if err
         console.log "response.files.length=#{response.files.length}"
         step()
 
@@ -69,17 +76,21 @@ async.series [
       return
     infolog "--- Googleスプレッドシート読み込みのテスト"
     obj = new GSheets
-    obj.useOAuth2 oauth2ClientPath, readTokenPath, false, () =>
-      obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (response) =>
+    obj.useOAuth2 oauth2ClientPath, readTokenPath, false, (err, response) =>
+      throw err if err
+      obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (err, response) =>
+        throw err if err
         console.log "listFilesByName response=#{util.inspect response}"
         spreadsheetId = response.files[0].id
 
         infolog "--- スプレッドシート情報の取得"
-        obj.getProperties spreadsheetId, (response) =>
+        obj.getProperties spreadsheetId, (err, response) =>
+          throw err if err
           console.log "getProperties response=#{util.inspect response}"
 
           infolog "--- セル値の読み込み"
-          obj.getValues spreadsheetId, 'Sheet1', (response) =>
+          obj.getValues spreadsheetId, 'Sheet1', (err, response) =>
+            throw err if err
             console.log "getValues response=#{util.inspect response}"
             step()
 
@@ -90,17 +101,21 @@ async.series [
       return
     infolog "--- Googleスプレッドシート書き込みのテスト"
     obj = new GSheets
-    obj.useOAuth2 oauth2ClientPath, writeTokenPath, true, () =>
-      obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (response) =>
+    obj.useOAuth2 oauth2ClientPath, writeTokenPath, true, (err, response) =>
+      throw err if err
+      obj.listFilesByName 'TryNodeJs_sample-spreadsheet', null, (err, response) =>
+        throw err if err
         console.log "listFilesByName response=#{util.inspect response}"
         spreadsheetId = response.files[0].id
 
         infolog "--- セル値の更新"
-        obj.updateValues spreadsheetId, 'Sheet1!A3:C3', [['test','update',timestamp]], (response) =>
+        obj.updateValues spreadsheetId, 'Sheet1!A3:C3', [['test','update',timestamp]], (err, response) =>
+          throw err if err
           console.log "updateValues response=#{util.inspect response}"
 
           infolog "--- セル値の追記"
-          obj.appendValues spreadsheetId, 'Sheet1', [['test','append',timestamp]], (response) =>
+          obj.appendValues spreadsheetId, 'Sheet1', [['test','append',timestamp]], (err, response) =>
+            throw err if err
             console.log "appendValues response=#{util.inspect response}"
             step()
 
@@ -111,15 +126,18 @@ async.series [
       return
     infolog "--- Googleスプレッドシート作成、シート追加のテスト"
     obj = new GSheets
-    obj.useOAuth2 oauth2ClientPath, writeTokenPath, true, () =>
+    obj.useOAuth2 oauth2ClientPath, writeTokenPath, true, (err, response) =>
+      throw err if err
 
       infolog "--- スプレッドシート作成"
-      obj.createSpreadsheet "TryNodeJs_mini-google-sheets_#{timestamp}", (response) =>
+      obj.createSpreadsheet "TryNodeJs_mini-google-sheets_#{timestamp}", (err, response) =>
+        throw err if err
         console.log "createSpreadsheet response=#{util.inspect response}"
         spreadsheetId = response.spreadsheetId
 
         infolog "--- シート追加"
-        obj.addSheet spreadsheetId, "Sheet_#{timestamp}", (response) =>
+        obj.addSheet spreadsheetId, "Sheet_#{timestamp}", (err, response) =>
+          throw err if err
           console.log "addSheet response=#{util.inspect response}"
           step()
 

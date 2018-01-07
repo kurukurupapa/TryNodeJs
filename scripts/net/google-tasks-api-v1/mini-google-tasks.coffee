@@ -43,7 +43,7 @@ class GTasks
   # @param {string} credentialPath  Google Developers ConsoleからダウンロードしたOAuth2.0クライアントIDのJSONファイルパス
   # @param {string} tokenPath  OAuth2.0認可後のトークン情報を保存するファイルパス
   # @param {boolean} writeFlag  読み込みのみの場合false, 読み書きの場合true
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   useOAuth2: (credentialPath, tokenPath, writeFlag, callback) ->
     assert.ok credentialPath, "引数エラー credentialPath=#{credentialPath}"
@@ -55,32 +55,34 @@ class GTasks
       GTasks.READ_ONLY_SCOPE
     fs.readFile credentialPath, (err, content) =>
       if err
-        throw new Error "Error loading client secret file: #{err}"
+        callback new Error "Error loading client secret file: #{err}", null
+        return
       @_authorize JSON.parse(content), tokenPath, scope, callback
 
   ###
   # 別途入手済みのアクセストークンを使用する
   # @param {string} accessToken  アクセストークン
-  # @param {function} callback  function()
+  # @param {function} callback  function(err)
   ###
   useAccessToken: (@accessToken, callback) ->
     assert.ok @accessToken, "引数エラー accessToken=#{@accessToken}"
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
-    callback()
+    callback null
 
   ###
   # アクセストークンを更新する
   # 事前にuseOAuth2メソッドを呼び出しておくこと。
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   refreshAccessToken: (callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     assert.ok @oauth2Client, "エラー @oauth2Client=#{@oauth2Client}"
     @oauth2Client.refreshAccessToken (err, token) =>
       if err
-        throw new Error "Error while trying to refresh access token #{err}"
+        callback new Error "Error while trying to refresh access token #{err}", null
+        return
       @oauth2Client.credentials = token
-      callback token
+      callback null, token
 
   ###*
   # Create an OAuth2 client with the given credentials, and then execute the
@@ -102,7 +104,7 @@ class GTasks
       else
         oauth2Client.credentials = JSON.parse(token)
         @oauth2Client = oauth2Client
-        callback @oauth2Client.credentials
+        callback null, @oauth2Client.credentials
 
   ###*
   # Get and store new token after prompting for user authorization, and then
@@ -124,11 +126,12 @@ class GTasks
       rl.close()
       oauth2Client.getToken code, (err, token) =>
         if err
-          throw new Error "Error while trying to retrieve access token #{err}"
+          callback new Error "Error while trying to retrieve access token #{err}", null
+          return
         oauth2Client.credentials = token
         @_storeToken token, tokenPath
         @oauth2Client = oauth2Client
-        callback token
+        callback null, token
 
   ###*
   # Store token to disk be used in later program executions.
@@ -148,21 +151,24 @@ class GTasks
   ###
   # タスクリストを検索
   # @param {string} title  検索するタスクリストのタイトル
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   findTasklists: (title, callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
-    @listTasklists (response) =>
+    @listTasklists (err, response) =>
+      if err
+        callback err, null
+        return
       tasklists = response.items
       outTasklists = []
       for e in response.items
         if e.title is title
           outTasklists.push e
-      callback {items: outTasklists}
+      callback null, {items: outTasklists}
 
   ###
   # タスクリスト一覧を取得
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   # responseの例：
   # {
   #   "kind": "tasks#taskLists",
@@ -188,13 +194,14 @@ class GTasks
         Authorization: "Bearer #{@accessToken}"
     }, (err, response) =>
       if err
-        throw new Error 'The API returned an error: ' + err
-      callback response
+        callback new Error 'The API returned an error: ' + err, null
+        return
+      callback null, response
 
   ###
   # タスクリストを追加
   # @param {string} title タスクリストのタイトル
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   # responseの例：
   # {
   #   "kind": "tasks#taskList",
@@ -215,13 +222,14 @@ class GTasks
         title: title
     }, (err, response) =>
       if err
-        throw new Error 'The API returned an error: ' + err
-      callback response
+        callback new Error 'The API returned an error: ' + err, null
+        return
+      callback null, response
 
   ###
   # タスクリストを更新
   # @param {string} resource 更新するタスクリストの内容。insertTasklistメソッドのresponse参照。
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   updateTasklist: (resource, callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
@@ -233,25 +241,29 @@ class GTasks
       resource: resource
     }, (err, response) =>
       if err
-        throw new Error 'The API returned an error: ' + err
-      callback response
+        callback new Error 'The API returned an error: ' + err, null
+        return
+      callback null, response
 
   ###
   # タスクを抽出
   # @param {string} tasklistId  タスクリストID。デフォルトタスクリストの場合、'@default'。
   # @param {string} title  抽出対象のタイトル
   # @param {object} params  listTasksメソッド参照
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   findTasks: (tasklistId, title, params, callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
-    @listTasks tasklistId, params, (response) =>
+    @listTasks tasklistId, params, (err, response) =>
+      if err
+        callback err, null
+        return
       tasks = response.items
       outTasks = []
       for e in tasks
         if e.title is title
           outTasks.push e
-      callback {items: outTasks}
+      callback null, {items: outTasks}
 
   ###
   # タスク一覧を取得
@@ -260,7 +272,7 @@ class GTasks
   # @param {boolean} params.showCompleted Flag indicating whether completed tasks are returned in the result. Optional. The default is True.
   # @param {boolean} params.showDeleted Flag indicating whether deleted tasks are returned in the result. Optional. The default is False.
   # @param {boolean} params.showHidden Flag indicating whether hidden tasks are returned in the result. Optional. The default is False.
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   # responseの例：
   # {
   #   "kind": "tasks#tasks",
@@ -303,14 +315,15 @@ class GTasks
     }, params
     @tasks.tasks.list params2, (err, response) =>
       if err
-        throw new Error 'The API returned an error: ' + err
-      callback response
+        callback new Error 'The API returned an error: ' + err, null
+        return
+      callback null, response
 
   ###
   # タスクを追加
   # @param {string} tasklistId  タスクリストID。デフォルトタスクリストの場合、'@default'。
   # @param {object} resource  新規タスクの内容。指定したい属性のみ設定すればOK。
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   # resource,responseの例：
   # {
   #   "kind": "tasks#task",
@@ -346,26 +359,27 @@ class GTasks
       resource: resource
     }, (err, response) =>
       if err
-        throw new Error 'The API returned an error: ' + err
-      callback response
+        callback new Error 'The API returned an error: ' + err, null
+        return
+      callback null, response
 
   ###
   # タスクのステータスを完了に更新
   # @param {string} tasklistId  タスクリストID。デフォルトタスクリストの場合、'@default'。
   # @param {object} resource  更新するタスクオブジェクト。（更新項目だけだとエラーになった。全項目が揃ってないとダメかも。）
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   updateTaskStatusToCompleted: (tasklistId, resource, callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     resource2 = Object.assign {}, resource, {status: GTasks.STATUS_COMPLETED}
     @updateTask tasklistId, resource2, (response) =>
-      callback response
+      callback null, response
 
   ###
   # タスクを更新
   # @param {string} tasklistId  タスクリストID。デフォルトタスクリストの場合、'@default'。
   # @param {object} resource  更新するタスクオブジェクト。（更新項目だけだとエラーになった。全項目が揃ってないとダメかも。）
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   updateTask: (tasklistId, resource, callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
@@ -378,7 +392,8 @@ class GTasks
       resource: resource
     }, (err, response) =>
       if err
-        throw new Error 'The API returned an error: ' + err
-      callback response
+        callback new Error 'The API returned an error: ' + err, null
+        return
+      callback null, response
 
 module.exports.GTasks = GTasks

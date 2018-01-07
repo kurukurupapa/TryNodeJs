@@ -45,7 +45,7 @@ class GSheets
   # @param {string} credentialPath  Google Developers ConsoleからダウンロードしたOAuth2.0クライアントIDのJSONファイルパス
   # @param {string} tokenPath  OAuth2.0認可後のトークン情報を保存するファイルパス
   # @param {boolean} writeFlag  読み込みのみの場合false, 読み書きの場合true
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   useOAuth2: (credentialPath, tokenPath, writeFlag, callback) ->
     assert.ok credentialPath, "引数エラー credentialPath=#{credentialPath}"
@@ -57,32 +57,34 @@ class GSheets
       GSheets.READ_ONLY_SCOPE
     fs.readFile credentialPath, (err, content) =>
       if err
-        throw new Error "Error loading client secret file: #{err}"
+        callback new Error "Error loading client secret file: #{err}", null
+        return
       @_authorize JSON.parse(content), tokenPath, scope, callback
 
   ###
   # 別途入手済みのアクセストークンを使用する
   # @param {string} accessToken  アクセストークン
-  # @param {function} callback  function()
+  # @param {function} callback  function(err)
   ###
   useAccessToken: (@accessToken, callback) ->
     assert.ok @accessToken, "引数エラー accessToken=#{@accessToken}"
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
-    callback()
+    callback null
 
   ###
   # アクセストークンを更新する
   # 事前にuseOAuth2メソッドを呼び出しておくこと。
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   refreshAccessToken: (callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
     assert.ok @oauth2Client, "エラー @oauth2Client=#{@oauth2Client}"
     @oauth2Client.refreshAccessToken (err, token) =>
       if err
-        throw new Error "Error while trying to refresh access token #{err}"
+        callback new Error "Error while trying to refresh access token #{err}", null
+        return
       @oauth2Client.credentials = token
-      callback token
+      callback null, token
 
   ###*
   # Create an OAuth2 client with the given credentials, and then execute the
@@ -104,7 +106,7 @@ class GSheets
       else
         oauth2Client.credentials = JSON.parse(token)
         @oauth2Client = oauth2Client
-        callback @oauth2Client.credentials
+        callback null, @oauth2Client.credentials
 
   ###*
   # Get and store new token after prompting for user authorization, and then
@@ -126,11 +128,12 @@ class GSheets
       rl.close()
       oauth2Client.getToken code, (err, token) =>
         if err
-          throw new Error "Error while trying to retrieve access token #{err}"
+          callback new Error "Error while trying to retrieve access token #{err}", null
+          return
         oauth2Client.credentials = token
         @_storeToken token, tokenPath
         @oauth2Client = oauth2Client
-        callback token
+        callback null, token
 
   ###*
   # Store token to disk be used in later program executions.
@@ -152,7 +155,7 @@ class GSheets
   # Google Drive API v3を使用
   # @param {string} name  ファイル名
   # @param {string} parentId  必要あればフォルダのID
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   # responseの主な内容：
   # {
   #   "kind": "drive#fileList",
@@ -197,14 +200,15 @@ class GSheets
       fields: "files(id,name)"
     }, (err, response) =>
       if err
-        throw new Error "The API returned an error: #{err}"
-      callback response
+        callback new Error "The API returned an error: #{err}", null
+        return
+      callback null, response
 
   ###
   # スプレッドシートの作成
   # マイドライブ直下に作成される。
   # @param {string} name  スプレッドシート名
-  # @param {function} callback  function(response)。responseの内容は、getPropertiesメソッド参照。
+  # @param {function} callback  function(err, response)。responseの内容は、getPropertiesメソッド参照。
   ###
   createSpreadsheet: (name, callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
@@ -217,13 +221,14 @@ class GSheets
           title: name
     }, (err, response) =>
       if err
-        throw new Error "The API returned an error: #{err}"
-      callback response
+        callback new Error "The API returned an error: #{err}", null
+        return
+      callback null, response
 
   ###
   # スプレッドシートの情報を取得する
   # @param {string} spreadsheetId  スプレッドシートID
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   # responseの主な内容：
   # {
   #   spreadsheetId: string,
@@ -268,14 +273,15 @@ class GSheets
       spreadsheetId: spreadsheetId
     }, (err, response) =>
       if err
-        throw new Error "The API returned an error: #{err}"
-      callback response
+        callback new Error "The API returned an error: #{err}", null
+        return
+      callback null, response
 
   ###
   # シートの追加
   # @param {string} spreadsheetId  スプレッドシートID
   # @param {string} sheetName  シート名
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   # responseの主な内容：
   # {
   #   "spreadsheetId": string,
@@ -321,14 +327,15 @@ class GSheets
         ]
     }, (err, response) =>
       if err
-        throw new Error "The API returned an error: #{err}"
-      callback response
+        callback new Error "The API returned an error: #{err}", null
+        return
+      callback null, response
 
   ###
   # シートの値を取得
   # @param {string} spreadsheetId  スプレッドシートID
   # @param {string} sheetName  シート名
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   # responseの主な内容：
   # {
   #   "range": string,                    #例：'Sheet1!A1:Z1000'
@@ -348,15 +355,16 @@ class GSheets
       range: sheetName
     }, (err, response) =>
       if err
-        throw new Error "The API returned an error: #{err}"
-      callback response
+        callback new Error "The API returned an error: #{err}", null
+        return
+      callback null, response
 
   ###
   # 指定範囲の値を更新
   # @param {string} spreadsheetId  スプレッドシートID
   # @param {string} range  更新するセル範囲。例："Sheet1!A1:C3"
   # @param {object} values  更新する値の二次元配列。例：[['a','b','c'],[1,2,3]]
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   updateValues: (spreadsheetId, range, values, callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
@@ -373,15 +381,16 @@ class GSheets
         }]
     }, (err, response) =>
       if err
-        throw new Error "The API returned an error: #{err}"
-      callback response
+        callback new Error "The API returned an error: #{err}", null
+        return
+      callback null, response
 
   ###
   # 指定シートの最終行に追記
   # @param {string} spreadsheetId  スプレッドシートID
   # @param {string} sheetName  シート名
   # @param {object} values  追記する値の二次元配列。例：[['a','b','c'],[1,2,3]]
-  # @param {function} callback  function(response)
+  # @param {function} callback  function(err, response)
   ###
   appendValues: (spreadsheetId, sheetName, values, callback) ->
     assert.ok typeof callback is 'function', "引数エラー callback=#{callback}"
@@ -396,7 +405,8 @@ class GSheets
         values: values
     }, (err, response) =>
       if err
-        throw new Error "The API returned an error: #{err}"
-      callback response
+        callback new Error "The API returned an error: #{err}", null
+        return
+      callback null, response
 
 module.exports.GSheets = GSheets

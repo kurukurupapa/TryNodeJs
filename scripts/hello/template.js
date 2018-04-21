@@ -3,7 +3,7 @@
 // 実行方法
 // node template.js
 
-var assert = require('assert')
+var assert = require('assert');
 var path = require('path');
 var util = require('util');
 
@@ -13,7 +13,7 @@ var baseName = path.basename(__filename, path.extname(__filename));
 var d = new Date();
 var dateStr = d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2);
 var timeStr = ('0'+d.getHours()).slice(-2)+('0'+d.getMinutes()).slice(-2)+('0'+d.getSeconds()).slice(-2);
-var timestamp = dateStr+'-'+timeStr
+var timestamp = dateStr+'-'+timeStr;
 var infolog = util.log;
 var debuglog = util.debuglog(baseName);
 
@@ -21,7 +21,7 @@ var debuglog = util.debuglog(baseName);
 debuglog(scriptName + ' START');
 
 // 引数解析
-var help = process.argv.length <= 2 || process.argv[2] == '-h'
+var help = process.argv.length <= 2 || process.argv[2] == '-h';
 if (help) {
   console.log('Usage: node ' + scriptName);
   return;

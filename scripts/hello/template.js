@@ -1,6 +1,7 @@
 // テンプレートファイル
 //
 // 実行方法
+// set NODE_DEBUG=template
 // node template.js
 
 var assert = require('assert');

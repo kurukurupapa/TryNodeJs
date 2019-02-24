@@ -19,7 +19,7 @@ var infolog = require("util").log;
 infolog("Hello world."); //タイムスタンプが出力される。
 
 // デバッグログ
-// set NODE_DEBUG=myapp
+// export NODE_DEBUG=myapp
 var debuglog = require("util").debuglog("myapp");
 debuglog("デバッグログです。");
 
